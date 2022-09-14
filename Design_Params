@@ -1,0 +1,169 @@
+'''
+IBEHS 1P10 DP2 Team Python Program
+
+Team Number: 25
+'''
+import math
+
+'''Subprogram 1'''
+def calc_min_stem_dia(stem_dia , body_weight, canal_diameter):
+    ult_ten_strength = 138                          #MPa
+    canal_offset = 40           #fem head offset    #mm     #L
+    force = 3.25 * body_weight                       #N      #F
+    correct_stem_dia = False
+
+    while correct_stem_dia == False:
+        #Creating equations
+        
+        area = (math.pi/4)*(pow(stem_dia, 2))   #mm^2   #A  #the 2 indicates "to the power of 2"
+
+        bending_moment = force*canal_offset     #N*mm   #M
+
+        y = 0.5*stem_dia
+
+        inertia = (math.pi/64)*(pow(stem_dia, 4))  #mm^2   #I
+
+        axial_stress = (-1) * force/area           #MPa    #is negative because it is a compressive force
+
+        bending_stress = bending_moment*y/inertia  #MPa
+
+        app_ten_stress = int(axial_stress + bending_stress) #total stress #MPa
+
+        if app_ten_stress > ult_ten_strength:
+            stem_dia = stem_dia + 0.01
+        elif app_ten_stress < ult_ten_strength:
+            stem_dia = stem_dia - 0.01
+        else:
+            min_stem_dia = stem_dia
+            correct_stem_dia = True
+            print ("Body Weight: " + str(body_weight))
+            print ("Canal Diameter: " + str(canal_diameter))
+            print ("Applied Tensile Stress: " + str(app_ten_stress))
+            print ("Ultimate Tensile Stress: " + str(ult_ten_strength))
+            print ("Minimum Stem Diameter: " + str(round(min_stem_dia, 1)))
+
+
+'''Subprogram 2'''
+def calc_adj_stress_amp (stem_dia, body_weight):
+  #Read File
+  read_file = open("SN Data - Sample Polymer.txt", "r")
+  file_info = read_file.read()
+  values = file_info.split()
+  list = []
+  for value in values:
+    list.append(value)
+
+  n_list = []
+  x=1
+  for i in range(int((len(list))/2)):
+    n_list.append(list[x])
+    x+=2
+  print(n_list)
+  read_file.close()
+
+  stress_list = []
+  y=0
+  for i in range(int((len(list))/2)):
+    stress_list.append(list[y])
+    y+=2
+  print(stress_list)
+  read_file.close()
+
+  stress_amplitude = 1
+  stress_amplitude_adj = 0
+  
+  #Comparison between stress_amplitude and adj one
+  a = 0
+  while (int(float(stress_list[a]))>stress_amplitude_adj):
+    #Find Cross-Sectional Area
+    area = (math.pi/4)*(stem_dia**2)
+
+    #Calculate force
+    f_min = -12*body_weight
+    f_max = 12*body_weight
+
+    #Calculate stress min and max
+    stress_min = f_min/area
+    stress_max = f_max/area
+    stress_amplitude = (stress_max-stress_min)/2
+    
+    #Solve for unique stress concentration
+    K_N = 8.5 + ((math.log(int(float(n_list[a])), 10))**(0.7*25/40))
+    
+    #Solve for adjusted stress Amplitude
+    stress_amplitude_adj = K_N*stress_amplitude
+
+    print(stress_amplitude_adj)
+    print(stress_amplitude)
+    print(n_list[a])
+
+    a += 1
+
+
+'''Subprogram 3'''
+def calc_yrs_to_fail (canal_diameter, outer_dia, body_weight, modulus_bone, modulus_implant):
+
+  #Determine Area of Bone
+  area = math.pi*(((0.5*outer_dia)**2)-((0.5*canal_diameter)**2))
+
+  #Determine Force on Bone
+  force = 30*body_weight
+  
+  #Determine Comprehensive Stress on Bone
+  Comprehensive_Stress = force/area
+
+  #2: Determine Reduced Bone Stress
+  stress_reduc = Comprehensive_Stress*((3*modulus_bone)/(modulus_bone + modulus_implant))**(1/3)
+
+  print("Reduced Bone stress = " + str(round(stress_reduc,3)) + " mPa")
+
+  #3: Determine Modulus Ratio (E_ratio)
+  E_ratio = (modulus_implant/modulus_bone)**0.5
+
+  #4: Determine Compressive Strength of the bone
+  yrs_fail = 0
+  comp_strength = (0.0015*(yrs_fail**2)) - (3.752*yrs_fail*E_ratio) + 168.54
+
+  #5: Determine years until failure
+  while (comp_strength>stress_reduc):
+    print("Year " + str(yrs_fail) + ": " + str(comp_strength))
+    yrs_fail += 1
+    comp_strength = (0.0015*(yrs_fail**2)) - (3.752*yrs_fail*E_ratio) + 168.54
+
+  stress_fail = comp_strength
+  print("Year " + str(yrs_fail) + ": " + str(stress_fail) + "\n" + "It will take " + str(yrs_fail) + " years")
+
+
+
+'''Main Function'''
+def main():
+    team_number = 25
+    
+    body_weight = 85*9.81                             #N
+    canal_diameter = 16.5   #medullary canal         #mm     #Do
+    outer_dia = 32          #femoral diaphysis       #mm     #Di
+    stem_dia =  (0.8)*(canal_diameter)               #mm     #y
+    modulus_bone = 17
+    #GPa     #E_bone
+    modulus_implant = 17.5
+    #GPa     #E_implant
+
+    exit = False
+    #creating a while loop that uses user input; does not exit until user chooses to exit
+    while exit == False:
+        print ("\n\nMain Menu")
+        print ("\n 1.Subprogram 1 \n 2.Subprogram 2 \n 3.Subprogram 3 \n 4.Exit program \n")
+        choose = int(input("Choose a subprogram to run. To do this, input the subprogram's corresponding number: "))
+        if choose == 1:
+            calc_min_stem_dia (stem_dia, body_weight, canal_diameter)
+        elif choose == 2:
+            calc_adj_stress_amp (stem_dia, body_weight)
+        elif choose == 3:
+            calc_yrs_to_fail (canal_diameter, outer_dia, body_weight, modulus_bone, modulus_implant)
+        elif choose == 4:
+            exit = True
+            print ("The program has been exited.")
+        else:
+          print ("\nPlease select a number from the menu.") 
+
+main()
